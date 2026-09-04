@@ -107,6 +107,30 @@ Output is a normal Nuitka standalone folder, not one-file mode.
 
 The build includes Windows executable metadata and an application icon. Those help the binary look like a normal packaged application, but no metadata can guarantee that antivirus software will never produce a false positive. Code-signing the final executable with a trusted certificate is the strongest extra step if you distribute it widely.
 
+## Tests
+
+Install the small test dependency set:
+
+```powershell
+py -m pip install -r requirements-test.txt
+```
+
+Run the server API tests:
+
+```powershell
+py tests/test_server.py
+```
+
+Run the receiver routing test:
+
+```powershell
+py tests/test_receiver.py
+```
+
+The receiver test starts a local server on an available port, listens on a unique
+channel, and publishes once to a different channel and once to the listening
+channel. It asserts that only the same-channel URL is received.
+
 ## Security
 
 There is intentionally no authentication in this minimal version. Anyone who can reach `/api/post` can send a URL to connected receivers.

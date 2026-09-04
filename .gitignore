@@ -1,5 +1,7 @@
 config.json
 .venv
+__pycache__/
+*.pyc
 receiver.dist
 receiver.build
 nuitka-crash-report.xml
