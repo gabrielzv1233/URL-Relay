@@ -35,44 +35,38 @@ class ServerApiTests(unittest.TestCase):
         response = self.client.get("/api")
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get_json()["post"], "/api/post")
-        self.assertEqual(
-            response.get_json()["socket"],
-            "/api/socket?channel=<channel>",
-        )
+        self.assertEqual(response.content_type, "text/html; charset=utf-8")
+        self.assertIn(b"URL Channel Relay", response.data)
+        self.assertIn(b"POST", response.data)
+        self.assertIn(b"WebSocket", response.data)
 
-    def test_get_post_returns_json_usage_guidance(self):
+    def test_get_post_returns_html_documentation(self):
         response = self.client.get("/api/post")
-        payload = response.get_json()
 
-        self.assertEqual(response.status_code, 405)
-        self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(payload["error"], "Method not allowed")
-        self.assertEqual(payload["received_method"], "GET")
-        self.assertEqual(payload["required"]["method"], "POST")
-        self.assertEqual(set(payload["accepted_fields"]), {"url", "channel"})
-        self.assertIn("POST", response.headers["Allow"])
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, "text/html; charset=utf-8")
+        self.assertIn(b"Accepted fields", response.data)
+        self.assertIn(b"Required", response.data)
+        self.assertIn(b"Optional", response.data)
+        self.assertIn(b"https://example.com/article", response.data)
 
-    def test_plain_get_socket_returns_websocket_guidance(self):
+    def test_plain_get_socket_returns_html_documentation(self):
         response = self.client.get("/api/socket?channel=desk")
-        payload = response.get_json()
 
-        self.assertEqual(response.status_code, 426)
-        self.assertEqual(response.content_type, "application/json")
-        self.assertEqual(payload["error"], "WebSocket upgrade required")
-        self.assertEqual(payload["required"]["method"], "GET")
-        self.assertEqual(payload["required"]["protocol"], "WebSocket")
-        self.assertEqual(set(payload["accepted_fields"]), {"channel"})
-        self.assertEqual(response.headers["Upgrade"], "websocket")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.content_type, "text/html; charset=utf-8")
+        self.assertIn(b"GET upgrade", response.data)
+        self.assertIn(b"Query string", response.data)
+        self.assertIn(b"desktop", response.data)
 
-    def test_wrong_socket_method_returns_json_usage_guidance(self):
+    def test_wrong_socket_method_returns_json_error_with_docs_link(self):
         response = self.client.post("/api/socket")
         payload = response.get_json()
 
         self.assertEqual(response.status_code, 405)
         self.assertEqual(payload["error"], "Method not allowed")
-        self.assertEqual(payload["required"]["method"], "GET")
-        self.assertEqual(payload["required"]["protocol"], "WebSocket")
+        self.assertIn("GET", payload["allowed_methods"])
+        self.assertEqual(payload["documentation"], "/api")
 
     def test_non_api_error_is_unchanged(self):
         response = self.client.get("/")

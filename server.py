@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, render_template, request
 from collections import defaultdict
 from urllib.parse import urlparse
 from flask_sock import Sock
@@ -12,39 +12,6 @@ sock = Sock(app)
 
 listeners = defaultdict(set)
 listeners_lock = Lock()
-
-API_GUIDANCE = {
-    "/api": {
-        "required": {"method": "GET"},
-        "accepted_fields": {},
-    },
-    "/api/post": {
-        "required": {"method": "POST"},
-        "accepted_inputs": [
-            {"content_type": "application/json", "fields": ["url", "channel"]},
-            {"content_type": "application/x-www-form-urlencoded", "fields": ["url", "channel"]},
-            {"location": "query", "fields": ["url", "channel"]},
-            {"location": "headers", "fields": ["X-URL", "X-Channel"]},
-        ],
-        "accepted_fields": {
-            "url": "Required. An http:// or https:// URL.",
-            "channel": "Optional. Defaults to 'none'.",
-        },
-    },
-    "/api/socket": {
-        "required": {
-            "method": "GET",
-            "protocol": "WebSocket",
-            "url": "/api/socket?channel=<channel>",
-        },
-        "accepted_inputs": [
-            {"location": "query", "fields": ["channel"]},
-        ],
-        "accepted_fields": {
-            "channel": "Optional. Defaults to 'none'.",
-        },
-    },
-}
 
 
 def normalize_channel(value):
@@ -60,17 +27,11 @@ def valid_url(value):
         return False
 
 
-def api_error(message, status_code, guidance):
-    response = jsonify({
-        "ok": False,
-        "error": message,
-        "endpoint": request.path,
-        "received_method": request.method,
-        **guidance,
-    })
-    response.status_code = status_code
-    response.headers["Allow"] = guidance["required"]["method"]
-    return response
+def api_docs(active_endpoint=None):
+    return render_template(
+        "api_docs.html",
+        active_endpoint=active_endpoint,
+    )
 
 
 @app.before_request
@@ -80,33 +41,38 @@ def require_websocket_upgrade():
         and request.method == "GET"
         and request.headers.get("Upgrade", "").lower() != "websocket"
     ):
-        response = api_error(
-            "WebSocket upgrade required",
-            426,
-            API_GUIDANCE["/api/socket"],
-        )
-        response.headers["Upgrade"] = "websocket"
-        return response
+        return api_docs("/api/socket")
 
     return None
 
 
 @app.errorhandler(405)
 def method_not_allowed(error):
-    guidance = API_GUIDANCE.get(request.path)
-    if guidance is None:
+    if request.path not in {"/api", "/api/post", "/api/socket"}:
         return error
 
-    return api_error("Method not allowed", 405, guidance)
+    response = jsonify({
+        "ok": False,
+        "error": "Method not allowed",
+        "endpoint": request.path,
+        "received_method": request.method,
+        "allowed_methods": sorted(error.valid_methods or []),
+        "documentation": "/api",
+    })
+    response.status_code = 405
+    if error.valid_methods:
+        response.headers["Allow"] = ", ".join(sorted(error.valid_methods))
+    return response
 
 
 @app.get("/api")
 def api_info():
-    return jsonify({
-        "service": "URL Channel Relay",
-        "post": "/api/post",
-        "socket": "/api/socket?channel=<channel>",
-    })
+    return api_docs()
+
+
+@app.get("/api/post")
+def post_docs():
+    return api_docs("/api/post")
 
 
 @app.post("/api/post")

@@ -1,0 +1,332 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>URL Channel Relay API</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --background: #0b1020;
+      --panel: #121a2f;
+      --panel-raised: #18223c;
+      --border: #2b3858;
+      --text: #edf2ff;
+      --muted: #aebbd5;
+      --accent: #65d6ad;
+      --post: #ffd166;
+      --socket: #7cb8ff;
+      --required: #ff8f8f;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(circle at 15% 0%, #18294a 0, transparent 32rem),
+        var(--background);
+      color: var(--text);
+      font: 16px/1.55 system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+
+    main {
+      width: min(1080px, calc(100% - 32px));
+      margin: 0 auto;
+      padding: 64px 0 80px;
+    }
+
+    header { margin-bottom: 36px; }
+
+    h1 {
+      margin: 12px 0 8px;
+      font-size: clamp(2rem, 6vw, 4rem);
+      line-height: 1.05;
+      letter-spacing: -0.04em;
+    }
+
+    h2, h3 { line-height: 1.2; }
+    h2 { margin: 0; font-size: 1.5rem; }
+    h3 { margin: 28px 0 10px; font-size: 1rem; }
+    p { color: var(--muted); }
+
+    .eyebrow {
+      color: var(--accent);
+      font-size: 0.78rem;
+      font-weight: 800;
+      letter-spacing: 0.13em;
+      text-transform: uppercase;
+    }
+
+    .intro { max-width: 720px; font-size: 1.08rem; }
+
+    nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 24px;
+    }
+
+    nav a {
+      border: 1px solid var(--border);
+      border-radius: 999px;
+      color: var(--text);
+      padding: 7px 13px;
+      text-decoration: none;
+    }
+
+    nav a:hover { border-color: var(--accent); }
+
+    .notice {
+      margin: 0 0 24px;
+      border-left: 3px solid var(--accent);
+      background: #12263a;
+      border-radius: 0 8px 8px 0;
+      padding: 10px 14px;
+      color: var(--text);
+    }
+
+    .endpoint {
+      margin-top: 22px;
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      background: color-mix(in srgb, var(--panel) 94%, transparent);
+      box-shadow: 0 18px 50px rgb(0 0 0 / 20%);
+      overflow: hidden;
+    }
+
+    .endpoint.active { border-color: var(--accent); }
+
+    .endpoint-heading {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 12px;
+      padding: 20px 22px;
+      background: var(--panel-raised);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .endpoint-body { padding: 4px 22px 24px; }
+
+    .badge {
+      display: inline-block;
+      border-radius: 6px;
+      color: #111827;
+      padding: 3px 8px;
+      font-size: 0.78rem;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+    }
+
+    .get { background: var(--accent); }
+    .post { background: var(--post); }
+    .ws { background: var(--socket); }
+
+    code, pre {
+      font-family: ui-monospace, SFMono-Regular, Consolas, "Liberation Mono", monospace;
+    }
+
+    .path { color: var(--text); font-size: 1.05rem; }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 700px;
+    }
+
+    th, td {
+      border-bottom: 1px solid var(--border);
+      padding: 12px 10px;
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      color: var(--muted);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    td:first-child { color: var(--accent); font-weight: 700; }
+    .required { color: var(--required); font-weight: 700; }
+    .optional { color: var(--muted); }
+
+    pre {
+      margin: 0;
+      border: 1px solid var(--border);
+      border-radius: 9px;
+      background: #080d19;
+      color: #dce7ff;
+      padding: 16px;
+      overflow-x: auto;
+      font-size: 0.9rem;
+    }
+
+    .format-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      padding: 0;
+      list-style: none;
+    }
+
+    .format-list li {
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: #0d1426;
+      padding: 5px 9px;
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+
+    footer { margin-top: 30px; color: var(--muted); font-size: 0.88rem; }
+  </style>
+</head>
+<body>
+  <main>
+    <header>
+      <div class="eyebrow">Local API reference</div>
+      <h1>URL Channel Relay</h1>
+      <p class="intro">
+        Publish HTTP or HTTPS URLs to a named channel. Every WebSocket receiver
+        connected to that exact channel receives the URL.
+      </p>
+      <nav aria-label="API endpoints">
+        <a href="/api">Overview</a>
+        <a href="#post-endpoint">POST /api/post</a>
+        <a href="#socket-endpoint">WebSocket /api/socket</a>
+      </nav>
+    </header>
+
+    {% if active_endpoint %}
+      <p class="notice">Showing usage details for <code>{{ active_endpoint }}</code>.</p>
+    {% endif %}
+
+    <section class="endpoint" id="api-endpoint">
+      <div class="endpoint-heading">
+        <span class="badge get">GET</span>
+        <h2><code class="path">/api</code></h2>
+      </div>
+      <div class="endpoint-body">
+        <p>This documentation page. It has no request fields.</p>
+      </div>
+    </section>
+
+    <section class="endpoint{% if active_endpoint == '/api/post' %} active{% endif %}" id="post-endpoint">
+      <div class="endpoint-heading">
+        <span class="badge post">POST</span>
+        <h2><code class="path">/api/post</code></h2>
+      </div>
+      <div class="endpoint-body">
+        <p>Validate a URL and deliver it to every receiver on the selected channel.</p>
+
+        <h3>Accepted fields</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Required?</th>
+                <th>Accepted in</th>
+                <th>Description</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>url</code></td>
+                <td class="required">Required</td>
+                <td>JSON, form, query, or <code>X-URL</code> header</td>
+                <td>An absolute URL using <code>http://</code> or <code>https://</code>.</td>
+                <td><code>https://example.com/article</code></td>
+              </tr>
+              <tr>
+                <td><code>channel</code></td>
+                <td class="optional">Optional</td>
+                <td>JSON, form, query, or <code>X-Channel</code> header</td>
+                <td>Exact channel name. Empty or omitted values default to <code>none</code>.</td>
+                <td><code>desktop</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Accepted request formats</h3>
+        <ul class="format-list">
+          <li>application/json</li>
+          <li>application/x-www-form-urlencoded</li>
+          <li>Query parameters</li>
+          <li>X-URL and X-Channel headers</li>
+        </ul>
+
+        <h3>Example request</h3>
+        <pre><code>curl -X POST {{ request.host_url.rstrip('/') }}/api/post \
+  -H "Content-Type: application/json" \
+  -d '{"url":"https://example.com/article","channel":"desktop"}'</code></pre>
+
+        <h3>Successful response</h3>
+        <pre><code>{
+  "ok": true,
+  "url": "https://example.com/article",
+  "channel": "desktop",
+  "delivered": 1
+}</code></pre>
+      </div>
+    </section>
+
+    <section class="endpoint{% if active_endpoint == '/api/socket' %} active{% endif %}" id="socket-endpoint">
+      <div class="endpoint-heading">
+        <span class="badge ws">WS</span>
+        <span class="badge get">GET upgrade</span>
+        <h2><code class="path">/api/socket?channel=&lt;channel&gt;</code></h2>
+      </div>
+      <div class="endpoint-body">
+        <p>Open a WebSocket and listen for URLs published to one exact channel.</p>
+
+        <h3>Accepted fields</h3>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Field</th>
+                <th>Required?</th>
+                <th>Accepted in</th>
+                <th>Description</th>
+                <th>Example</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td><code>channel</code></td>
+                <td class="optional">Optional</td>
+                <td>Query string</td>
+                <td>Exact channel to listen to. Empty or omitted values default to <code>none</code>.</td>
+                <td><code>desktop</code></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Example connection</h3>
+        <pre><code>const socket = new WebSocket(
+  "ws://{{ request.host }}/api/socket?channel=desktop"
+);
+
+socket.onmessage = (event) =&gt; console.log(JSON.parse(event.data));</code></pre>
+
+        <h3>Received message</h3>
+        <pre><code>{
+  "url": "https://example.com/article",
+  "channel": "desktop"
+}</code></pre>
+      </div>
+    </section>
+
+    <footer>Channels are exact, case-sensitive matches. This service does not currently require authentication.</footer>
+  </main>
+</body>
+</html>
