@@ -1,0 +1,4 @@
+config.json
+.venv
+receiver.dist
+receiver.build
