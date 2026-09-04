@@ -25,9 +25,17 @@ The server also accepts:
 
 Only `http://` and `https://` URLs are accepted.
 
+An unsupported method returns JSON with HTTP status `405`, the required method,
+accepted input formats, and accepted fields. For example, `GET /api/post`
+explains that the endpoint requires `POST` and accepts `url` and `channel`.
+
 ### WebSocket `/api/socket?channel=desktop`
 
 Each connected receiver listens to one channel.
+
+An ordinary HTTP request to this endpoint returns JSON with HTTP status `426`
+and explains that a WebSocket connection is required. Other unsupported methods
+return the same usage details with HTTP status `405`.
 
 When a URL is posted, every receiver currently connected to that exact channel gets:
 

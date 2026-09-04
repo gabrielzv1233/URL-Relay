@@ -41,6 +41,45 @@ class ServerApiTests(unittest.TestCase):
             "/api/socket?channel=<channel>",
         )
 
+    def test_get_post_returns_json_usage_guidance(self):
+        response = self.client.get("/api/post")
+        payload = response.get_json()
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(payload["error"], "Method not allowed")
+        self.assertEqual(payload["received_method"], "GET")
+        self.assertEqual(payload["required"]["method"], "POST")
+        self.assertEqual(set(payload["accepted_fields"]), {"url", "channel"})
+        self.assertIn("POST", response.headers["Allow"])
+
+    def test_plain_get_socket_returns_websocket_guidance(self):
+        response = self.client.get("/api/socket?channel=desk")
+        payload = response.get_json()
+
+        self.assertEqual(response.status_code, 426)
+        self.assertEqual(response.content_type, "application/json")
+        self.assertEqual(payload["error"], "WebSocket upgrade required")
+        self.assertEqual(payload["required"]["method"], "GET")
+        self.assertEqual(payload["required"]["protocol"], "WebSocket")
+        self.assertEqual(set(payload["accepted_fields"]), {"channel"})
+        self.assertEqual(response.headers["Upgrade"], "websocket")
+
+    def test_wrong_socket_method_returns_json_usage_guidance(self):
+        response = self.client.post("/api/socket")
+        payload = response.get_json()
+
+        self.assertEqual(response.status_code, 405)
+        self.assertEqual(payload["error"], "Method not allowed")
+        self.assertEqual(payload["required"]["method"], "GET")
+        self.assertEqual(payload["required"]["protocol"], "WebSocket")
+
+    def test_non_api_error_is_unchanged(self):
+        response = self.client.get("/")
+
+        self.assertEqual(response.status_code, 404)
+        self.assertFalse(response.is_json)
+
     def test_post_requires_a_url(self):
         response = self.client.post("/api/post", json={"channel": "desk"})
 

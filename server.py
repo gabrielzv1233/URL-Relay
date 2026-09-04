@@ -13,6 +13,39 @@ sock = Sock(app)
 listeners = defaultdict(set)
 listeners_lock = Lock()
 
+API_GUIDANCE = {
+    "/api": {
+        "required": {"method": "GET"},
+        "accepted_fields": {},
+    },
+    "/api/post": {
+        "required": {"method": "POST"},
+        "accepted_inputs": [
+            {"content_type": "application/json", "fields": ["url", "channel"]},
+            {"content_type": "application/x-www-form-urlencoded", "fields": ["url", "channel"]},
+            {"location": "query", "fields": ["url", "channel"]},
+            {"location": "headers", "fields": ["X-URL", "X-Channel"]},
+        ],
+        "accepted_fields": {
+            "url": "Required. An http:// or https:// URL.",
+            "channel": "Optional. Defaults to 'none'.",
+        },
+    },
+    "/api/socket": {
+        "required": {
+            "method": "GET",
+            "protocol": "WebSocket",
+            "url": "/api/socket?channel=<channel>",
+        },
+        "accepted_inputs": [
+            {"location": "query", "fields": ["channel"]},
+        ],
+        "accepted_fields": {
+            "channel": "Optional. Defaults to 'none'.",
+        },
+    },
+}
+
 
 def normalize_channel(value):
     value = str(value or "none").strip()
@@ -25,6 +58,46 @@ def valid_url(value):
         return parsed.scheme in {"http", "https"} and bool(parsed.netloc)
     except Exception:
         return False
+
+
+def api_error(message, status_code, guidance):
+    response = jsonify({
+        "ok": False,
+        "error": message,
+        "endpoint": request.path,
+        "received_method": request.method,
+        **guidance,
+    })
+    response.status_code = status_code
+    response.headers["Allow"] = guidance["required"]["method"]
+    return response
+
+
+@app.before_request
+def require_websocket_upgrade():
+    if (
+        request.path == "/api/socket"
+        and request.method == "GET"
+        and request.headers.get("Upgrade", "").lower() != "websocket"
+    ):
+        response = api_error(
+            "WebSocket upgrade required",
+            426,
+            API_GUIDANCE["/api/socket"],
+        )
+        response.headers["Upgrade"] = "websocket"
+        return response
+
+    return None
+
+
+@app.errorhandler(405)
+def method_not_allowed(error):
+    guidance = API_GUIDANCE.get(request.path)
+    if guidance is None:
+        return error
+
+    return api_error("Method not allowed", 405, guidance)
 
 
 @app.get("/api")
