@@ -1,0 +1,33 @@
+﻿VSVersionInfo(
+    ffi=FixedFileInfo(
+        filevers=(1, 0, 0, 0),
+        prodvers=(1, 0, 0, 0),
+        mask=0x3f,
+        flags=0x0,
+        OS=0x40004,
+        fileType=0x1,
+        subtype=0x0,
+        date=(0, 0)
+    ),
+    kids=[
+        StringFileInfo([
+            StringTable(
+                '040904B0',
+                [
+                    StringStruct('CompanyName', 'Gabrielzv1233'),
+                    StringStruct('FileDescription', 'Receives URLs from a configured WebSocket channel.'),
+                    StringStruct('FileVersion', '1.0.0.0'),
+                    StringStruct('InternalName', 'URLRelayReceiver'),
+                    StringStruct('LegalCopyright', 'Copyright © 2026 Gabrielzv1233'),
+                    StringStruct('OriginalFilename', 'URLRelayReceiver.exe'),
+                    StringStruct('ProductName', 'URL Relay Receiver'),
+                    StringStruct('ProductVersion', '1.0.0.0'),
+                    StringStruct('Comments', 'https://github.com/gabrielzv1233/URL-Relay')
+                ]
+            )
+        ]),
+        VarFileInfo([
+            VarStruct('Translation', [1033, 1200])
+        ])
+    ]
+)

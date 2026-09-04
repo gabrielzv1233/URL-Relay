@@ -2,3 +2,4 @@ config.json
 .venv
 receiver.dist
 receiver.build
+nuitka-crash-report.xml

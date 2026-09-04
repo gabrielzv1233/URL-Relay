@@ -1,4 +1,5 @@
 websocket-client
+pyinstaller
 pystray
 Nuitka
 pillow
