@@ -4,6 +4,7 @@ from urllib.parse import urlparse
 from flask_sock import Sock
 from threading import Lock
 import json
+import os
 
 
 app = Flask(__name__)
@@ -111,4 +112,6 @@ def socket(ws):
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", debug=True)
+    host = os.getenv("INTERNAL_IP", "0.0.0.0")
+    port = int(os.getenv("SERVER_PORT", 5000))
+    app.run(host=host, port=port, debug=True)
