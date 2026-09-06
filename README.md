@@ -1,4 +1,4 @@
-# URL Channel Relay
+# URL Relay
 
 Tiny channel-based URL relay.
 

@@ -11,7 +11,7 @@ import sys
 import os
 
 
-APP_NAME = "URL Channel Receiver"
+APP_NAME = "URL Relay Receiver"
 DEFAULT_CONFIG = {
     "server_url": "http://127.0.0.1:5000",
     "channel": "none",
